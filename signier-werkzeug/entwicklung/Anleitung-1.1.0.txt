@@ -1,0 +1,75 @@
+Signier-Werkzeug 1.1.0
+======================
+
+Software-Versionen signieren und prüfen (Ed25519, Format "sr-signatur-1" -
+dasselbe wie tools\signieren.py des Speedrace-Dashboards).
+
+
+START
+-----
+Doppelklick auf Signier-Werkzeug.exe. Es öffnet sich eine Seite im Browser
+(nur auf diesem Rechner erreichbar). Zum Schließen oben rechts "Beenden" -
+oder einfach den Browser-Tab schließen, das Werkzeug beendet sich dann nach
+drei Minuten selbst.
+
+Beim ersten Start meldet Windows evtl. "Der Computer wurde durch Windows
+geschützt" (das Programm ist nicht bei Microsoft registriert). Dann
+"Weitere Informationen" -> "Trotzdem ausführen". Prüfsumme dieser Datei
+(PowerShell: Get-FileHash Signier-Werkzeug.exe):
+  SHA-256 804fe49c7f4c64b880c55d0198683a010aafdf788a801564688182def2a20e27
+
+
+EINMALIG EINRICHTEN (Speedrace-Dashboard)
+-----------------------------------------
+1. Reiter "Profile & Schlüssel" -> "+ Profil Speedrace-Dashboard" -> Speichern.
+2. Deinen vorhandenen Schlüssel übernehmen: Das Werkzeug findet
+   C:\Users\<Name>\speedrace-signatur-privat.pem von selbst - Kennwort
+   eingeben -> "Übernehmen". Der angezeigte öffentliche Schlüssel muss
+   7OhcbQl3LZIM488s+WIDQMr4YhQmGd4dgyxRgun5XAc= sein.
+3. Reiter "GitHub": Token anlegen (GitHub -> Settings -> Developer settings
+   -> Fine-grained tokens -> Generate new token; Repository access: nur
+   live-Ergebnisse; Permissions: Contents = Read and write) und speichern.
+   Es wird verschlüsselt für deinen Windows-Benutzer abgelegt.
+
+
+JE VERSION (ein Klick)
+----------------------
+Reiter "Signieren" -> Profil wählen -> "Von GitHub laden, signieren und
+hochladen" -> Kennwort. Das Werkzeug lädt den aktuellen Stand, signiert ihn
+und lädt SIGNATUR.json hoch. Außerdem setzt es den Tag v<Version> (z. B.
+v1.8.4) auf genau diesen Stand - darüber findet das Dashboard beim "Update
+aus GitHub" die signierte Fassung. Danach das Update im Dashboard einspielen.
+Ist die Signatur auf GitHub schon aktuell (noch einmal signiert), wird nur
+der Tag gesetzt.
+Ändert sich auf GitHub zwischendurch etwas, bricht es ab (dann noch einmal).
+
+Prüfen geht jederzeit ohne Kennwort: Reiter "Prüfen".
+
+
+ANDERE SOFTWARE
+---------------
+"+ Profil für andere Software": eigener Name, eigener Schlüssel (Knopf
+"Neuen Schlüssel erzeugen"), Regel "Alle Dateien außer Ausnahmen" (z. B.
+logs/*). Die Software selbst prüft mit Pruefmodul\signatur_pruefen.py
+(Anleitung in der Datei).
+
+
+SICHERUNG - WICHTIG
+-------------------
+Die privaten Schlüssel liegen mit Kennwort verschlüsselt in
+%APPDATA%\Signier-Werkzeug\schluessel (Knopf "Ordner öffnen" im Werkzeug).
+Diesen Ordner auf einen USB-Stick kopieren und die Kennwörter sicher
+aufbewahren. Ein gelöschtes Profil benennt die Schlüsseldatei nur um.
+
+
+NEU IN 1.1.0
+------------
+Setzt beim Hochladen den Tag v<Version> auf den signierten Stand (ein
+schon vorhandener Tag derselben Version wird dorthin verschoben).
+
+
+INHALT
+------
+Signier-Werkzeug.exe          das Programm (enthält Python und cryptography)
+Quelltext\                    Quelltext des Programms und Symbol
+Pruefmodul\signatur_pruefen.py zum Einbauen in eigene Software

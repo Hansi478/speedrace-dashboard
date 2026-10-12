@@ -63,8 +63,9 @@ Werkzeug jetzt beim Hochladen den Tag auf den signierten Stand.
 4. Noch offen: der erste echte Bau auf GitHub und ein echtes Ersetzen der exe unter
    Windows. Bisher ist das nur nachgestellt getestet (`entwicklung/test_werkzeug.py`)
    bzw. unter Wine.
-5. Möglich als Verbesserung: `actions/checkout` und `setup-python` auf Commit-SHAs
-   festlegen statt auf Versions-Tags.
+5. Erledigt (laut Nutzer, im Repository `Hansi478/signier-werkzeug`): Alle Actions in
+   `bauen.yml` und `pruefen.yml` sind auf vollständige Commit-SHAs festgelegt, die Version
+   steht jeweils als Kommentar dahinter. Die Fassung in diesem Ordner ist älter.
 
 ## Tests (Entwicklung)
 

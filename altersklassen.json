@@ -1,0 +1,358 @@
+{
+ "stand": "2026-10-22",
+ "hinweis": "Altersklassen-Vorlagen für das Speedrace Dashboard (Alter = Veranstaltungsjahr - Jahrgang, Stichtag 31.12.; g: '' = alle, 'm', 'w'). Wird im Vor-/Nachmeldungen-Editor über „Vorlagen aktualisieren“ geladen.",
+ "vorlagen": {
+  "DLV": [
+   {
+    "name": "MU8",
+    "von": 0,
+    "bis": 7,
+    "g": "m"
+   },
+   {
+    "name": "MU10",
+    "von": 8,
+    "bis": 9,
+    "g": "m"
+   },
+   {
+    "name": "MU12",
+    "von": 10,
+    "bis": 11,
+    "g": "m"
+   },
+   {
+    "name": "MU14",
+    "von": 12,
+    "bis": 13,
+    "g": "m"
+   },
+   {
+    "name": "MU16",
+    "von": 14,
+    "bis": 15,
+    "g": "m"
+   },
+   {
+    "name": "MU18",
+    "von": 16,
+    "bis": 17,
+    "g": "m"
+   },
+   {
+    "name": "MU20",
+    "von": 18,
+    "bis": 19,
+    "g": "m"
+   },
+   {
+    "name": "MHK",
+    "von": 20,
+    "bis": 29,
+    "g": "m"
+   },
+   {
+    "name": "M30",
+    "von": 30,
+    "bis": 34,
+    "g": "m"
+   },
+   {
+    "name": "M35",
+    "von": 35,
+    "bis": 39,
+    "g": "m"
+   },
+   {
+    "name": "M40",
+    "von": 40,
+    "bis": 44,
+    "g": "m"
+   },
+   {
+    "name": "M45",
+    "von": 45,
+    "bis": 49,
+    "g": "m"
+   },
+   {
+    "name": "M50",
+    "von": 50,
+    "bis": 54,
+    "g": "m"
+   },
+   {
+    "name": "M55",
+    "von": 55,
+    "bis": 59,
+    "g": "m"
+   },
+   {
+    "name": "M60",
+    "von": 60,
+    "bis": 64,
+    "g": "m"
+   },
+   {
+    "name": "M65",
+    "von": 65,
+    "bis": 69,
+    "g": "m"
+   },
+   {
+    "name": "M70",
+    "von": 70,
+    "bis": 74,
+    "g": "m"
+   },
+   {
+    "name": "M75",
+    "von": 75,
+    "bis": 79,
+    "g": "m"
+   },
+   {
+    "name": "M80",
+    "von": 80,
+    "bis": 84,
+    "g": "m"
+   },
+   {
+    "name": "M85",
+    "von": 85,
+    "bis": null,
+    "g": "m"
+   },
+   {
+    "name": "WU8",
+    "von": 0,
+    "bis": 7,
+    "g": "w"
+   },
+   {
+    "name": "WU10",
+    "von": 8,
+    "bis": 9,
+    "g": "w"
+   },
+   {
+    "name": "WU12",
+    "von": 10,
+    "bis": 11,
+    "g": "w"
+   },
+   {
+    "name": "WU14",
+    "von": 12,
+    "bis": 13,
+    "g": "w"
+   },
+   {
+    "name": "WU16",
+    "von": 14,
+    "bis": 15,
+    "g": "w"
+   },
+   {
+    "name": "WU18",
+    "von": 16,
+    "bis": 17,
+    "g": "w"
+   },
+   {
+    "name": "WU20",
+    "von": 18,
+    "bis": 19,
+    "g": "w"
+   },
+   {
+    "name": "WHK",
+    "von": 20,
+    "bis": 29,
+    "g": "w"
+   },
+   {
+    "name": "W30",
+    "von": 30,
+    "bis": 34,
+    "g": "w"
+   },
+   {
+    "name": "W35",
+    "von": 35,
+    "bis": 39,
+    "g": "w"
+   },
+   {
+    "name": "W40",
+    "von": 40,
+    "bis": 44,
+    "g": "w"
+   },
+   {
+    "name": "W45",
+    "von": 45,
+    "bis": 49,
+    "g": "w"
+   },
+   {
+    "name": "W50",
+    "von": 50,
+    "bis": 54,
+    "g": "w"
+   },
+   {
+    "name": "W55",
+    "von": 55,
+    "bis": 59,
+    "g": "w"
+   },
+   {
+    "name": "W60",
+    "von": 60,
+    "bis": 64,
+    "g": "w"
+   },
+   {
+    "name": "W65",
+    "von": 65,
+    "bis": 69,
+    "g": "w"
+   },
+   {
+    "name": "W70",
+    "von": 70,
+    "bis": 74,
+    "g": "w"
+   },
+   {
+    "name": "W75",
+    "von": 75,
+    "bis": 79,
+    "g": "w"
+   },
+   {
+    "name": "W80",
+    "von": 80,
+    "bis": 84,
+    "g": "w"
+   },
+   {
+    "name": "W85",
+    "von": 85,
+    "bis": null,
+    "g": "w"
+   }
+  ],
+  "DRIV": [
+   {
+    "name": "M Schüler D",
+    "von": 5,
+    "bis": 6,
+    "g": "m"
+   },
+   {
+    "name": "M Schüler C",
+    "von": 7,
+    "bis": 8,
+    "g": "m"
+   },
+   {
+    "name": "M Schüler B",
+    "von": 9,
+    "bis": 10,
+    "g": "m"
+   },
+   {
+    "name": "M Schüler A",
+    "von": 11,
+    "bis": 12,
+    "g": "m"
+   },
+   {
+    "name": "M Kadetten",
+    "von": 13,
+    "bis": 14,
+    "g": "m"
+   },
+   {
+    "name": "M Jugend",
+    "von": 15,
+    "bis": 16,
+    "g": "m"
+   },
+   {
+    "name": "M Junioren",
+    "von": 17,
+    "bis": 18,
+    "g": "m"
+   },
+   {
+    "name": "M Aktive",
+    "von": 19,
+    "bis": null,
+    "g": "m"
+   },
+   {
+    "name": "M Masters",
+    "von": 30,
+    "bis": null,
+    "g": "m"
+   },
+   {
+    "name": "W Schüler D",
+    "von": 5,
+    "bis": 6,
+    "g": "w"
+   },
+   {
+    "name": "W Schüler C",
+    "von": 7,
+    "bis": 8,
+    "g": "w"
+   },
+   {
+    "name": "W Schüler B",
+    "von": 9,
+    "bis": 10,
+    "g": "w"
+   },
+   {
+    "name": "W Schüler A",
+    "von": 11,
+    "bis": 12,
+    "g": "w"
+   },
+   {
+    "name": "W Kadetten",
+    "von": 13,
+    "bis": 14,
+    "g": "w"
+   },
+   {
+    "name": "W Jugend",
+    "von": 15,
+    "bis": 16,
+    "g": "w"
+   },
+   {
+    "name": "W Junioren",
+    "von": 17,
+    "bis": 18,
+    "g": "w"
+   },
+   {
+    "name": "W Aktive",
+    "von": 19,
+    "bis": null,
+    "g": "w"
+   },
+   {
+    "name": "W Masters",
+    "von": 30,
+    "bis": null,
+    "g": "w"
+   }
+  ]
+ }
+}

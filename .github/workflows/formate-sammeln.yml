@@ -1,0 +1,32 @@
+# Geteilte Listenformate einsammeln: einmal am Tag die Datei speedrace-formate.json aus diesem Repo und
+# allen seinen Forks (den GitHub-Pages-Repos der Dashboards) holen, streng prüfen und als
+# parser_rezepte.json in den Zweig „vorlagen“ schreiben. Kein Geheimnis nötig: die Liste der Forks ist
+# öffentlich, das Token der Action schreibt nur in dieses Repo. In Forks läuft die Action nicht.
+name: Listenformate sammeln
+
+on:
+  schedule:
+    - cron: "23 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: formate-sammeln
+  cancel-in-progress: false
+
+jobs:
+  sammeln:
+    if: github.repository == 'Hansi478/speedrace-dashboard'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803   # v6.1.0 (Node.js 24)
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/sammeln
+      - name: Formate sammeln und in den Zweig vorlagen schreiben
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 .github/sammeln/formate_sammeln.py

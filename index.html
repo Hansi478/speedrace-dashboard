@@ -17,6 +17,21 @@ h1{font-size:1.4rem;margin:14px 0 6px;}
 #banner{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:5;display:none;
   background:#17212c;color:#e8edf3;border:1px solid #ff7a1a;border-radius:10px;padding:9px 14px;
   font-size:0.9rem;box-shadow:0 6px 20px rgba(0,0,0,.45);max-width:90%;text-align:center;}
+#login{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;
+  background:rgba(5,10,16,.72);padding:16px;box-sizing:border-box;}
+#login[hidden]{display:none;}
+#login form{background:#17212c;border:1px solid #263544;border-radius:12px;padding:18px;width:100%;max-width:380px;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:10px;}
+#login h2{margin:0;font-size:1.15rem;}
+#login input[type=text],#login input[type=password]{padding:10px 12px;border-radius:8px;border:1px solid #263544;
+  background:#0f1620;color:#e8edf3;font:inherit;font-size:16px;}
+#login label{font-size:.9rem;color:#c5d0dc;}
+#login .knoepfe{display:flex;gap:8px;flex-wrap:wrap;}
+#login button{padding:9px 14px;border-radius:8px;border:1px solid #ff7a1a;font:inherit;cursor:pointer;}
+#login button[type=submit]{background:#ff7a1a;color:#111;font-weight:600;}
+#login button[type=button]{background:transparent;color:#e8edf3;border-color:#263544;}
+#login-msg{font-size:.9rem;min-height:1.2em;}
+#login .hint{font-size:.8rem;color:#8ea0b5;margin:0;line-height:1.4;}
 </style></head><body>
 <div id="wait"><div><svg width="96" height="96" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" rx="104" fill="#0f1620"/>
@@ -55,12 +70,24 @@ h1{font-size:1.4rem;margin:14px 0 6px;}
 </svg>
 <h1>Live-Ergebnisse</h1>
 <div id="status">Verbinde &hellip;</div>
-<div style="margin-top:14px;"><a id="fallback-link" href="https://miller-season-represent-lovers.trycloudflare.com">Hier klicken</a>, falls das nicht automatisch funktioniert.</div>
+<div style="margin-top:14px;"><a id="fallback-link" href="https://offering-anderson-speakers-conflicts.trycloudflare.com">Hier klicken</a>, falls das nicht automatisch funktioniert.</div>
 </div></div>
 <iframe id="frame" title="Live-Ergebnisse" allow="web-share; clipboard-write; fullscreen"></iframe>
 <div id="banner">Verbindung unterbrochen &ndash; verbinde neu &hellip;</div>
+<div id="login" hidden><form id="login-form" action="#" method="post" autocomplete="on">
+<h2>Anmelden</h2>
+<input type="text" id="login-name" name="username" autocomplete="username" autocapitalize="none" spellcheck="false"
+  placeholder="Benutzername oder E-Mail" required>
+<input type="password" id="login-pw" name="password" autocomplete="current-password" placeholder="Passwort" required>
+<label><input type="checkbox" id="login-bleiben"> angemeldet bleiben (30 Tage, sonst 12 Stunden)</label>
+<div id="login-msg" role="status"></div>
+<div class="knoepfe"><button type="submit" id="login-ok">Anmelden</button>
+<button type="button" id="login-abbrechen">Abbrechen</button></div>
+<p class="hint">Die Anmeldung geht wie gewohnt verschlüsselt direkt an das Dashboard; diese Seite speichert nichts.
+Der Passwortmanager des Browsers kann Benutzername und Passwort für diese feste Adresse speichern.</p>
+</form></div>
 <script>
-var fallbackTarget = "https://miller-season-represent-lovers.trycloudflare.com";
+var fallbackTarget = "https://offering-anderson-speakers-conflicts.trycloudflare.com";
 var apiUrl = "https://api.github.com/repos/hansi478/speedrace-dashboard/contents/current-url.json";
 var rawUrl = "https://raw.githubusercontent.com/hansi478/speedrace-dashboard/HEAD/current-url.json";
 var SLUG_RE = /^\d{4}-\d{2}-\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -114,6 +141,7 @@ function syncAddress() {
   try { history.replaceState(null, '', window.location.pathname + q); } catch (e) {}
 }
 function show(target) {
+  if (!loginBox.hidden) loginZu(false);   // neue Adresse: offene Anmeldung verwerfen
   current = target;
   helloSeen = false;
   frame.src = dest(target);
@@ -125,13 +153,65 @@ function show(target) {
   setTimeout(function() { if (!helloSeen && current === target) window.location.replace(dest(target)); }, 12000);
   if (!watching) { watching = true; setTimeout(watch, 20000); }
 }
+// Anmeldung auf DIESER Seite (feste GitHub-Adresse), damit der Passwortmanager des
+// Browsers sie speichern und ausfüllen kann - im Rahmen gehört sie zur wechselnden
+// Cloudflare-Adresse. Die Seite im Rahmen bittet darum (sr-login-zeigen); Benutzername
+// und Passwort gehen nur an genau die aktuelle Adresse des Rahmens, die Antwort
+// (sr-login-ergebnis) wird nur von dort angenommen.
+var loginNonce = null, loginZiel = '', loginUhr = null;
+var loginBox = document.getElementById('login'), loginForm = document.getElementById('login-form');
+var loginMsg = document.getElementById('login-msg'), loginOk = document.getElementById('login-ok');
+function loginZu(abbruch) {
+  if (abbruch && loginNonce && loginZiel) {
+    try { frame.contentWindow.postMessage({ type: 'sr-login-abbruch', nonce: loginNonce }, loginZiel); } catch (e) {}
+  }
+  clearTimeout(loginUhr);
+  loginNonce = null; loginZiel = '';
+  document.getElementById('login-pw').value = '';
+  loginOk.disabled = false;
+  loginBox.hidden = true;
+}
+function loginZeigen(d) {
+  if (typeof d.nonce !== 'string' || !/^[A-Za-z0-9]{16,64}$/.test(d.nonce)) return;
+  loginNonce = d.nonce; loginZiel = originOf(current);
+  document.getElementById('login-bleiben').checked = !!d.bleiben;
+  loginMsg.textContent = ''; loginOk.disabled = false;
+  loginBox.hidden = false;
+  var n = document.getElementById('login-name');
+  (n.value ? document.getElementById('login-pw') : n).focus();
+}
+loginForm.addEventListener('submit', function(e) {
+  e.preventDefault();
+  if (!loginNonce || !loginZiel || loginZiel !== originOf(current)) { loginZu(false); return; }
+  loginMsg.textContent = '\u23f3 Anmeldung \u2026'; loginOk.disabled = true;
+  try {
+    frame.contentWindow.postMessage({ type: 'sr-login', nonce: loginNonce, benutzername: document.getElementById('login-name').value,
+      passwort: document.getElementById('login-pw').value, bleiben: document.getElementById('login-bleiben').checked }, loginZiel);
+  } catch (err) { loginMsg.textContent = '\u274c Das Dashboard ist gerade nicht erreichbar.'; loginOk.disabled = false; return; }
+  clearTimeout(loginUhr);
+  loginUhr = setTimeout(function() { loginMsg.textContent = '\u274c Keine Antwort vom Dashboard \u2013 bitte erneut versuchen.'; loginOk.disabled = false; }, 30000);
+});
+document.getElementById('login-abbrechen').addEventListener('click', function() { loginZu(true); });
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && !loginBox.hidden) loginZu(true); });
 window.addEventListener('message', function(ev) {
-  if (!current || ev.origin !== originOf(current) || !ev.data || ev.data.type !== 'sr-nav') return;
+  if (!current || ev.origin !== originOf(current) || !ev.data || ev.source !== frame.contentWindow) return;
+  if (ev.data.type === 'sr-login-zeigen') { loginZeigen(ev.data); return; }
+  if (ev.data.type === 'sr-login-ergebnis') {
+    if (!loginNonce || ev.data.nonce !== loginNonce) return;
+    clearTimeout(loginUhr);
+    if (ev.data.ok) { loginZu(false); return; }
+    loginMsg.textContent = '\u274c ' + String(ev.data.error || 'Anmeldung fehlgeschlagen.').slice(0, 300);
+    loginOk.disabled = false;
+    document.getElementById('login-pw').select();
+    return;
+  }
+  if (ev.data.type !== 'sr-nav') return;
   helloSeen = true;
   if (okPath(ev.data.path)) framePath = ev.data.path;
   // Der Seite im Rahmen die GitHub-Adresse mitteilen: neue Tabs und das
-  // Neuladen nach einem Verbindungsausfall laufen dann über GitHub.
-  try { frame.contentWindow.postMessage({ type: 'sr-host', base: location.origin + location.pathname }, originOf(current)); } catch (e) {}
+  // Neuladen nach einem Verbindungsausfall laufen dann über GitHub; login:
+  // diese Seite kann das Anmeldefenster zeigen.
+  try { frame.contentWindow.postMessage({ type: 'sr-host', base: location.origin + location.pathname, login: true }, originOf(current)); } catch (e) {}
   if (typeof ev.data.title === 'string' && ev.data.title) document.title = ev.data.title.slice(0, 200);
   syncAddress();
 });

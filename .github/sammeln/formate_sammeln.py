@@ -8,7 +8,8 @@ speedrace-formate.json in sein Pages-Repo - einen Fork der Vorlage. Dieses Skrip
   2. holt je Quelle die Datei (höchstens 256 KB) und prüft jedes Format streng: nur bekannte Felder und
      Zellentypen, begrenzte Größen, kein Widerspruch zum eingebauten Wortschatz (aus „Name“ wird nie „Verein“);
      höchstens 50 Formate je Quelle. Aus den Dateien wird nie etwas ausgeführt,
-  3. lässt weg, was irgendeine Quelle als falsch gelesen gemeldet hat,
+  3. lässt weg, was mindestens zwei Quellen als falsch gelesen melden - oder eine, wenn keine andere Quelle das
+     Format hat (so kann ein einzelner Fork nicht die Formate aller anderen entfernen),
   4. behält von Hand hochgeladene Formate (stehen in parser_rezepte.json, stammen aber nicht aus einer Quelle),
   5. schreibt parser_rezepte.json in den Zweig „vorlagen“ (nur bei Änderungen, ein Commit).
 Die Dashboards holen die Datei von dort - und trauen ihr nicht blind: jede Liste in einem geteilten Format muss
@@ -16,8 +17,9 @@ vor Ort die automatische Prüfung bestehen.
 
 Nur Standardbibliothek. Start (in der Action):  python3 formate_sammeln.py
 Umgebung: GITHUB_REPOSITORY (Besitzer/Name), GITHUB_TOKEN; optional FORMATE_TROCKEN=1 (nichts schreiben).
-Die Regeln müssen zu parser.py passen (_GEN_FELDER, _GEN_TYPEN, _GEN_KOPF, _GEN_KOPF_FAMILIEN) - der Test
-tests/test_formate_sammeln.py prüft das.
+Konnten nicht alle Quellen gelesen werden (Fehler, Abrufgrenze der API), bleiben die bisher gesammelten Formate
+erhalten. Die Regeln müssen zu parser.py passen (_GEN_FELDER, _GEN_TYPEN, _GEN_KOPF, _GEN_KOPF_FAMILIEN) - der
+Test tests/test_formate_teilen.py prüft das.
 """
 import base64
 import datetime
@@ -35,6 +37,7 @@ MAX_DATEI = 256 * 1024
 MAX_JE_QUELLE = 50
 MAX_GESAMT = 500
 MAX_FORKS = 1000
+MAX_ABRUFE = 900        # GITHUB_TOKEN der Action: 1.000 Anfragen je Stunde und Repository
 
 FELDER = ("platz", "startnr", "name", "nachname", "vorname", "jahrgang", "ak", "geschlecht", "verein", "nat",
           "netto", "brutto", "zeit", "diff", "pace", "kmh", "ak_platz", "mw_platz", "x")
@@ -146,24 +149,31 @@ def quelle_pruefen(daten):
     return formate, falsch, hinweise
 
 
-def zusammenfuehren(quellen, bisher):
+def zusammenfuehren(quellen, bisher, vollstaendig=True):
     """quellen: [(name, daten)], bisher: Inhalt der bisherigen parser_rezepte.json (oder None).
+    vollstaendig=False: nicht alle Quellen gelesen - bisher gesammelte Formate bleiben.
     -> (neue Datei ohne Stand, Bericht [Text])"""
-    gesammelt, anzahl, falsch, bericht = {}, {}, set(), []
+    gesammelt, anzahl, melder, bericht = {}, {}, {}, []
+    automatisch_alt = set(bisher.get("automatisch") or []) if isinstance(bisher, dict) \
+        and isinstance(bisher.get("automatisch"), list) else set()
     for name, daten in quellen:
         formate, f, hinweise = quelle_pruefen(daten)
-        falsch |= f
+        for rid in f:
+            melder[rid] = melder.get(rid, 0) + 1
         for rid, r in formate.items():
             gesammelt.setdefault(rid, r)
-            anzahl[rid] = anzahl.get(rid, 0) + 1
+            if rid not in f:
+                anzahl[rid] = anzahl.get(rid, 0) + 1
         bericht.append(f"{name}: {len(formate)} Format(e), {len(f)} als falsch gemeldet"
                        + (" - " + "; ".join(hinweise[:5]) if hinweise else ""))
+    # weggelassen wird, was zwei Quellen als falsch melden - oder eine, wenn keine andere Quelle es hat
+    falsch = {rid for rid, n in melder.items() if n >= 2 or not anzahl.get(rid)}
     # von Hand hochgeladene: in der bisherigen Datei, aber nicht aus dem letzten automatischen Lauf
     manuell = {}
     if isinstance(bisher, dict) and isinstance(bisher.get("rezepte"), dict):
         automatisch = set(bisher.get("automatisch") or []) if isinstance(bisher.get("automatisch"), list) else set()
         for rid, r in bisher["rezepte"].items():
-            if rid in gesammelt or rid in automatisch:
+            if rid in gesammelt or (rid in automatisch and vollstaendig):
                 continue
             rr, grund = rezept_pruefen(r)
             if rr is not None and rr["id"] == rid:
@@ -175,7 +185,7 @@ def zusammenfuehren(quellen, bisher):
         if rid in falsch:
             continue
         r = dict(gesammelt.get(rid) or manuell[rid])
-        r["quellen"] = anzahl.get(rid, 0)
+        r["quellen"] = anzahl.get(rid, 0) or (r.get("quellen", 0) if rid in manuell else 0)
         rezepte[rid] = r
         if len(rezepte) >= MAX_GESAMT:
             bericht.append(f"Obergrenze {MAX_GESAMT} Formate erreicht")
@@ -183,16 +193,20 @@ def zusammenfuehren(quellen, bisher):
     weg = sorted(falsch & (set(gesammelt) | set(manuell)))
     if weg:
         bericht.append(f"{len(weg)} Format(e) weggelassen (als falsch gemeldet)")
+    if not vollstaendig:
+        bericht.append("nicht alle Quellen gelesen - bisher gesammelte Formate bleiben")
     return {"format": "speedrace-parser-rezepte", "version": 1,
             "hinweis": "Geteilte Listenformate für den allgemeinen Tabellenleser - nur Spaltenbezeichnungen und "
                        "Zellentypen, keine Inhalte. Jedes Dashboard prüft Listen in diesen Formaten selbst.",
-            "rezepte": rezepte, "automatisch": sorted(i for i in rezepte if i in gesammelt)}, bericht
+            "rezepte": rezepte, "automatisch": sorted(i for i in rezepte if i in gesammelt
+                                                      or (not vollstaendig and i in automatisch_alt))}, bericht
 
 
 # ---------------------------------------------------------------------------------------------------------------
 # GitHub (REST-API mit dem Token der Action)
 # ---------------------------------------------------------------------------------------------------------------
 API = "https://api.github.com"
+_abrufe = [0]
 
 
 def _api(methode, pfad, token, daten=None, roh=False, grenze=MAX_DATEI):
@@ -203,6 +217,7 @@ def _api(methode, pfad, token, daten=None, roh=False, grenze=MAX_DATEI):
     body = json.dumps(daten).encode("utf-8") if daten is not None else None
     if body is not None:
         kopf["Content-Type"] = "application/json"
+    _abrufe[0] += 1
     req = urllib.request.Request(API + pfad, data=body, headers=kopf, method=methode)
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
@@ -234,13 +249,13 @@ def quellen_finden(repo, token):
 
 
 def quelle_holen(name, token):
-    """speedrace-formate.json einer Quelle (Standardzweig) -> dict oder None."""
+    """speedrace-formate.json einer Quelle (Standardzweig) -> dict, None (keine Datei) oder False (Fehler)."""
     try:
         roh = _api("GET", f"/repos/{name}/contents/{DATEI_QUELLE}", token, roh=True)
         return json.loads(roh.decode("utf-8")) if roh else None
     except (ValueError, UnicodeDecodeError, urllib.error.URLError) as e:
         print(f"  {name}: nicht lesbar ({e.__class__.__name__})")
-        return None
+        return False
 
 
 def ziel_lesen(repo, token):
@@ -276,13 +291,19 @@ def main():
         return 2
     namen = quellen_finden(repo, token)
     print(f"{len(namen)} Quelle(n): Vorlage + {len(namen) - 1} Fork(s)")
-    quellen = []
+    quellen, vollstaendig = [], True
     for n in namen:
+        if _abrufe[0] >= MAX_ABRUFE:
+            print(f"Abrufgrenze erreicht - {len(namen) - namen.index(n)} Quelle(n) beim nächsten Lauf")
+            vollstaendig = False
+            break
         d = quelle_holen(n, token)
-        if d is not None:
+        if d is False:
+            vollstaendig = False
+        elif d is not None:
             quellen.append((n, d))
     bisher, sha, zweig_da = ziel_lesen(repo, token)
-    neu, bericht = zusammenfuehren(quellen, bisher)
+    neu, bericht = zusammenfuehren(quellen, bisher, vollstaendig)
     for zeile in bericht:
         print("  " + zeile)
     vergleich = {k: v for k, v in (bisher or {}).items() if k != "stand"} if isinstance(bisher, dict) else None

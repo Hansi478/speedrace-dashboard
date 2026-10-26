@@ -1,7 +1,8 @@
 {
-  "format": "speedrace-parser-rezepte",
-  "version": 1,
-  "stand": "2026-10-24",
-  "hinweis": "Bewährte Listenformate für den allgemeinen Tabellenleser - nur Spaltenbezeichnungen und Zellentypen, keine Inhalte. Ergänzen: im Dashboard unter Admin > Gelernte Listenformate > Exportieren und die Rezepte hier einfügen.",
-  "rezepte": {}
+ "automatisch": [],
+ "format": "speedrace-parser-rezepte",
+ "hinweis": "Geteilte Listenformate für den allgemeinen Tabellenleser - nur Spaltenbezeichnungen und Zellentypen, keine Inhalte. Jedes Dashboard prüft Listen in diesen Formaten selbst.",
+ "rezepte": {},
+ "stand": "2026-10-26",
+ "version": 1
 }

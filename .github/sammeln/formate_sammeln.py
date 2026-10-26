@@ -39,14 +39,15 @@ MAX_GESAMT = 500
 MAX_FORKS = 1000
 MAX_ABRUFE = 900        # GITHUB_TOKEN der Action: 1.000 Anfragen je Stunde und Repository
 
-FELDER = ("platz", "startnr", "name", "nachname", "vorname", "jahrgang", "ak", "geschlecht", "verein", "nat",
-          "netto", "brutto", "zeit", "diff", "pace", "kmh", "ak_platz", "mw_platz", "x")
+FELDER = ("platz", "startnr", "name", "nachname", "vorname", "jahrgang", "alter", "jg_ak", "ak", "geschlecht",
+          "verein", "nat", "netto", "brutto", "zeit", "diff", "pace", "kmh", "ak_platz", "mw_platz", "x")
 TYPEN = ("rang", "zahl", "zahl2", "jahr", "zeit", "status", "ak", "nat", "g", "diff", "pace", "kmh", "anteil",
-         "dezimal", "text")
+         "dezimal", "datum", "alter", "text")
 # eingebauter Wortschatz der Kopfzeilen (wie parser.py _GEN_KOPF)
 KOPF = [
     ("ak_platz", r"(ak|kl\.?|klasse|kat\.?)\s?-?\s?(platz|pl\.?|rang|rg\.?)|(platz|pl\.?|rang|rg\.?)\s?(ak|kl\.?|klasse)"),
     ("mw_platz", r"(m/?w|mw|geschl\.?|sex|g)\s?-?\s?(platz|pl\.?|rang|rg\.?)|(platz|pl\.?|rang|rg\.?)\s?(m/?w|mw|geschl\.?)"),
+    ("jg_ak", r"(jg\.?|jahrg\.?|jahrgang)\s?/\s?(ak|kl\.?|klasse)|(ak|kl\.?|klasse)\s?/\s?(jg\.?|jahrg\.?|jahrgang)"),
     ("platz", r"platz|pl\.?|plz\.?|rang|rg\.?|pos\.?|position|place|gesamt\s?-?\s?platz|gesamtrang|overall|rank"),
     ("startnr", r"st\.?\s?-?\s?nr\.?|start\s?-?\s?nr\.?|startnummer|bib|nr\.?|#|stnr\.?"),
     ("name", r"name|(teilnehmer|athlet|läufer|sportler|starter)([/*:_]?in(nen)?)?|(nach)?name,?\s?vorname|"
@@ -54,9 +55,11 @@ KOPF = [
              r"name\s?/\s?vorname|participant|runner"),
     ("nachname", r"nachname|familienname|surname|last\s?name"),
     ("vorname", r"vorname|first\s?name"),
-    ("jahrgang", r"jg\.?|jahrg\.?|jahrgang|geb\.?|geb\.?\s?jahr|geburtsjahr|yob|year"),
-    ("ak", r"ak|klasse|kat\.?|kategorie|altersklasse|age\s?group|ag|wk|wertung"),
-    ("geschlecht", r"g|geschl\.?|geschlecht|sex|m/w|gender"),
+    ("jahrgang", r"jg\.?|jahrg\.?|jahrgang|geb\.?|geb\.?\s?jahr|geburtsjahr|yob|year|geb\.?\s?-?\s?dat(um|\.)?|"
+                 r"geburtsdatum|geboren"),
+    ("alter", r"alter|age|lebensalter|alter\s?\(?(in\s)?jahren?\)?|jahre"),
+    ("ak", r"ak|klasse|kat\.?|kategorie|altersklasse|age\s?group|ag|wk|wertung|kl\.?"),
+    ("geschlecht", r"g|geschl\.?|geschlecht|sex|m/w|m/w/d|gender|anrede"),
     ("verein", r"verein|team|club|mannschaft|verein\s?/\s?ort|verein\s?/\s?team|ort\s?/\s?verein|firma|verein/schule"),
     ("nat", r"nat\.?|nation|land|country|nationalität"),
     ("netto", r"netto|nettozeit|chip\s?-?\s?zeit|chiptime|chip"),

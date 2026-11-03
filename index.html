@@ -32,6 +32,19 @@ h1{font-size:1.4rem;margin:14px 0 6px;}
 #login button[type=button]{background:transparent;color:#e8edf3;border-color:#263544;}
 #login-msg{font-size:.9rem;min-height:1.2em;}
 #login .hint{font-size:.8rem;color:#8ea0b5;margin:0;line-height:1.4;}
+#fido{position:fixed;inset:0;z-index:11;display:flex;align-items:center;justify-content:center;
+  background:rgba(5,10,16,.72);padding:16px;box-sizing:border-box;}
+#fido[hidden]{display:none;}
+#fido .box{background:#17212c;border:1px solid #263544;border-radius:12px;padding:18px;width:100%;max-width:380px;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:10px;}
+#fido h2{margin:0;font-size:1.15rem;}
+#fido p{margin:0;font-size:.92rem;color:#c5d0dc;line-height:1.45;}
+#fido .knoepfe{display:flex;gap:8px;flex-wrap:wrap;}
+#fido button{padding:9px 14px;border-radius:8px;border:1px solid #ff7a1a;font:inherit;cursor:pointer;}
+#fido-ok{background:#ff7a1a;color:#111;font-weight:600;}
+#fido-abbrechen{background:transparent;color:#e8edf3;border-color:#263544 !important;}
+#fido-msg{font-size:.9rem;min-height:1.2em;}
+#fido .hint{font-size:.8rem;color:#8ea0b5;}
 </style></head><body>
 <div id="wait"><div><svg width="96" height="96" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" rx="104" fill="#0f1620"/>
@@ -70,7 +83,7 @@ h1{font-size:1.4rem;margin:14px 0 6px;}
 </svg>
 <h1>Live-Ergebnisse</h1>
 <div id="status">Verbinde &hellip;</div>
-<div style="margin-top:14px;"><a id="fallback-link" href="https://named-mounting-functional-governmental.trycloudflare.com">Hier klicken</a>, falls das nicht automatisch funktioniert.</div>
+<div style="margin-top:14px;"><a id="fallback-link" href="https://subsection-compile-certified-locking.trycloudflare.com">Hier klicken</a>, falls das nicht automatisch funktioniert.</div>
 </div></div>
 <iframe id="frame" title="Live-Ergebnisse" allow="web-share; clipboard-write; fullscreen"></iframe>
 <div id="banner">Verbindung unterbrochen &ndash; verbinde neu &hellip;</div>
@@ -86,8 +99,17 @@ h1{font-size:1.4rem;margin:14px 0 6px;}
 <p class="hint">Die Anmeldung geht wie gewohnt verschlüsselt direkt an das Dashboard; diese Seite speichert nichts.
 Der Passwortmanager des Browsers kann Benutzername und Passwort für diese feste Adresse speichern.</p>
 </form></div>
+<div id="fido" hidden><div class="box" role="dialog" aria-labelledby="fido-titel">
+<h2 id="fido-titel">&#128273; Sicherheitsschl&uuml;ssel</h2>
+<p id="fido-text"></p>
+<div id="fido-msg" role="status"></div>
+<div class="knoepfe"><button type="button" id="fido-ok">Stick verwenden</button>
+<button type="button" id="fido-abbrechen">Abbrechen</button></div>
+<p class="hint">Der Stick wird hier auf dieser festen Adresse abgefragt; an das Dashboard geht nur ein daraus
+abgeleiteter Wert. Diese Seite speichert nichts.</p>
+</div></div>
 <script>
-var fallbackTarget = "https://named-mounting-functional-governmental.trycloudflare.com";
+var fallbackTarget = "https://subsection-compile-certified-locking.trycloudflare.com";
 var apiUrl = "https://api.github.com/repos/hansi478/speedrace-dashboard/contents/current-url.json";
 var rawUrl = "https://raw.githubusercontent.com/hansi478/speedrace-dashboard/HEAD/current-url.json";
 var SLUG_RE = /^\d{4}-\d{2}-\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -193,8 +215,88 @@ loginForm.addEventListener('submit', function(e) {
 });
 document.getElementById('login-abbrechen').addEventListener('click', function() { loginZu(true); });
 document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && !loginBox.hidden) loginZu(true); });
+// FIDO2-Stick (Lastschrift-Wiederherstellung): WebAuthn mit der Erweiterung PRF geht nur auf einer festen
+// Adresse - also hier. Die Seite im Rahmen bittet darum (sr-fido); Antwort (Stick-Kennung, PRF-Wert) nur an
+// genau die aktuelle Adresse des Rahmens. Jeder Zugriff auf den Stick braucht einen Klick (Safari).
+var fido = null;
+var fidoBox = document.getElementById('fido'), fidoText = document.getElementById('fido-text');
+var fidoMsg = document.getElementById('fido-msg'), fidoOk = document.getElementById('fido-ok');
+function b64(buf) { var a = new Uint8Array(buf), s = ''; for (var i = 0; i < a.length; i++) s += String.fromCharCode(a[i]); return btoa(s); }
+function vonB64url(t) { t = String(t).replace(/-/g, '+').replace(/_/g, '/'); while (t.length % 4) t += '=';
+  var r = atob(t), a = new Uint8Array(r.length); for (var i = 0; i < r.length; i++) a[i] = r.charCodeAt(i); return a; }
+function b64url(buf) { return b64(buf).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+function fidoSalz() { return crypto.subtle.digest('SHA-256', new TextEncoder().encode('speedrace-dashboard lastschrift v1')); }
+function fidoAntwort(r) {
+  if (!fido) return;
+  try { frame.contentWindow.postMessage({ type: 'sr-fido-ergebnis', nonce: fido.nonce, ok: !!r.ok, id: r.id || '', prf: r.prf || '',
+    error: String(r.error || '') }, fido.ziel); } catch (e) {}
+  fido = null; fidoBox.hidden = true;
+}
+function fidoZeigen(d) {
+  if (typeof d.nonce !== 'string' || !/^[A-Za-z0-9]{16,64}$/.test(d.nonce)) return;
+  if (d.aktion !== 'registrieren' && d.aktion !== 'lesen') return;
+  if (fido) fidoAntwort({ ok: false, error: 'abgebrochen' });
+  if (!window.PublicKeyCredential || !navigator.credentials) {
+    fido = { nonce: d.nonce, ziel: originOf(current) };
+    fidoAntwort({ ok: false, error: 'Dieser Browser kann keine Sicherheitsschlüssel (FIDO2) verwenden.' }); return;
+  }
+  fido = { nonce: d.nonce, ziel: originOf(current), aktion: d.aktion, name: String(d.name || 'Stick').slice(0, 60),
+           uid: String(d.uid || '').slice(0, 64), ids: (d.ids || []).slice(0, 8), schritt: 1, cred: null };
+  fidoText.textContent = d.aktion === 'registrieren'
+    ? 'Neuen Sicherheitsschlüssel „' + fido.name + '“ eintragen: Stick einstecken (oder ans Handy halten), dann auf „Stick verwenden“ tippen und PIN bzw. Taste bestätigen.'
+    : 'Lastschrift wiederherstellen: Stick einstecken (oder ans Handy halten), dann auf „Stick verwenden“ tippen und PIN bzw. Taste bestätigen.';
+  fidoOk.textContent = 'Stick verwenden'; fidoOk.disabled = false; fidoMsg.textContent = '';
+  fidoBox.hidden = false; fidoOk.focus();
+}
+function fidoLesen(ids, salz) {
+  return navigator.credentials.get({ publicKey: { challenge: crypto.getRandomValues(new Uint8Array(32)), timeout: 120000,
+    rpId: location.hostname, userVerification: 'required',
+    allowCredentials: ids.map(function(i) { return { type: 'public-key', id: vonB64url(i) }; }),
+    extensions: { prf: { eval: { first: salz } } } } });
+}
+fidoOk.addEventListener('click', function() {
+  if (!fido) return;
+  var f = fido;
+  fidoOk.disabled = true; fidoMsg.textContent = '⏳ Bitte den Stick bestätigen …';
+  fidoSalz().then(function(salz) {
+    if (f.aktion === 'lesen') {
+      return fidoLesen(f.ids, salz).then(function(c) {
+        var r = (c.getClientExtensionResults().prf || {}).results;
+        if (!r || !r.first) throw new Error('Dieser Stick liefert keinen PRF-Wert.');
+        fidoAntwort({ ok: true, id: b64url(c.rawId), prf: b64(r.first) });
+      });
+    }
+    if (f.schritt === 1) {
+      return navigator.credentials.create({ publicKey: { challenge: crypto.getRandomValues(new Uint8Array(32)), timeout: 120000,
+        rp: { id: location.hostname, name: 'Live-Ergebnis-Dashboard' },
+        user: { id: vonB64url(f.uid || 'eA'), name: f.name, displayName: f.name },
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+        authenticatorSelection: { userVerification: 'required', residentKey: 'discouraged' },
+        extensions: { prf: { eval: { first: salz } } } } }).then(function(c) {
+        var ext = c.getClientExtensionResults().prf || {};
+        if (ext.enabled === false) throw new Error('Dieser Stick (oder Browser) kann kein PRF – bitte einen anderen verwenden.');
+        f.cred = c.rawId;
+        if (ext.results && ext.results.first) { fidoAntwort({ ok: true, id: b64url(c.rawId), prf: b64(ext.results.first) }); return; }
+        f.schritt = 2;   // PRF-Wert erst beim Lesen: zweiter Klick (Safari verlangt je Zugriff einen Klick)
+        fidoOk.textContent = 'Zum Abschluss: Stick noch einmal bestätigen'; fidoOk.disabled = false;
+        fidoMsg.textContent = '✅ Eingetragen – bitte noch einmal bestätigen.';
+      });
+    }
+    return fidoLesen([b64url(f.cred)], salz).then(function(c) {
+      var r = (c.getClientExtensionResults().prf || {}).results;
+      if (!r || !r.first) throw new Error('Dieser Stick liefert keinen PRF-Wert.');
+      fidoAntwort({ ok: true, id: b64url(c.rawId), prf: b64(r.first) });
+    });
+  }).catch(function(e) {
+    if (fido !== f) return;
+    fidoMsg.textContent = '❌ ' + (e && e.name === 'NotAllowedError' ? 'Abgebrochen oder Zeit abgelaufen.' : String((e && e.message) || e).slice(0, 200));
+    fidoOk.disabled = false;
+  });
+});
+document.getElementById('fido-abbrechen').addEventListener('click', function() { fidoAntwort({ ok: false, error: 'abgebrochen' }); });
 window.addEventListener('message', function(ev) {
   if (!current || ev.origin !== originOf(current) || !ev.data || ev.source !== frame.contentWindow) return;
+  if (ev.data.type === 'sr-fido') { fidoZeigen(ev.data); return; }
   if (ev.data.type === 'sr-login-zeigen') { loginZeigen(ev.data); return; }
   if (ev.data.type === 'sr-login-ergebnis') {
     if (!loginNonce || ev.data.nonce !== loginNonce) return;
@@ -211,7 +313,8 @@ window.addEventListener('message', function(ev) {
   // Der Seite im Rahmen die GitHub-Adresse mitteilen: neue Tabs und das
   // Neuladen nach einem Verbindungsausfall laufen dann über GitHub; login:
   // diese Seite kann das Anmeldefenster zeigen.
-  try { frame.contentWindow.postMessage({ type: 'sr-host', base: location.origin + location.pathname, login: true }, originOf(current)); } catch (e) {}
+  try { frame.contentWindow.postMessage({ type: 'sr-host', base: location.origin + location.pathname, login: true,
+    fido: !!(window.PublicKeyCredential && navigator.credentials && window.isSecureContext) }, originOf(current)); } catch (e) {}
   if (typeof ev.data.title === 'string' && ev.data.title) document.title = ev.data.title.slice(0, 200);
   syncAddress();
 });
